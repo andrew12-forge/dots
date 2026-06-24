@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.withforge.pr-dev-merge-cron</string>
+
+    <key>ProgramArguments</key>
+    <array>
+        <string>/bin/bash</string>
+        <string>/Users/andrew/.local/bin/pr-dev-merge-cron.sh</string>
+    </array>
+
+    <!-- Run every 2 min. -->
+    <key>StartInterval</key>
+    <integer>120</integer>
+
+    <!-- Don't fire immediately when (re)loaded. -->
+    <key>RunAtLoad</key>
+    <false/>
+
+    <!-- The script also sets PATH internally; this is a sane baseline. -->
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>PATH</key>
+        <string>/Users/andrew/go/bin:/opt/homebrew/bin:/usr/bin:/bin:/usr/sbin:/sbin</string>
+    </dict>
+
+    <!-- The script exec's its real output to cron.log (which it rotates itself).
+         This boot log only catches catastrophic errors before that redirect. -->
+    <key>StandardOutPath</key>
+    <string>/Users/andrew/.local/state/pr-dev-merge-cron/cron.boot.log</string>
+    <key>StandardErrorPath</key>
+    <string>/Users/andrew/.local/state/pr-dev-merge-cron/cron.boot.log</string>
+
+    <!-- Avoid hammering if a run ever crashes immediately. -->
+    <key>ThrottleInterval</key>
+    <integer>60</integer>
+</dict>
+</plist>
