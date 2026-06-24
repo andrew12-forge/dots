@@ -1,0 +1,26 @@
+#!/usr/bin/env bash
+# forge-report-dump — print the text of one or more Forge interface reports so
+# you can grep/assert against them. Uses an isolated, refreshable copy of the
+# logged-in MCP profile, so it never collides with the live MCP browser's lock.
+#
+#   forge-report-dump <url> [<url> ...]      # dump report text
+#   forge-report-dump --refresh <url> ...    # re-pull cookies from the live
+#                                            # profile first (after a re-login)
+set -euo pipefail
+
+SRC="${FORGE_MCP_PROFILE:-$HOME/.cache/forge-mcp-chrome}"
+DST="$HOME/.cache/forge-report-probe/profile"
+
+if [ "${1:-}" = "--refresh" ] || [ ! -d "$DST" ]; then
+  [ "${1:-}" = "--refresh" ] && shift
+  mkdir -p "$DST"
+  rsync -a --delete \
+    --exclude 'Default/Cache' --exclude 'Default/Code Cache' --exclude 'Default/GPUCache' \
+    --exclude 'Default/Service Worker/CacheStorage' --exclude 'GrShaderCache' \
+    --exclude 'ShaderCache' --exclude 'component_crx_cache' --exclude '*.log' \
+    "$SRC/" "$DST/" >/dev/null
+  rm -f "$DST/Singleton"* 2>/dev/null || true
+fi
+
+exec env FORGE_REPORT_PROFILE="$DST" \
+  node "$HOME/.local/share/forge-ui-checks/report-dump.mjs" "$@"

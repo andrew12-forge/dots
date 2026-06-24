@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+# forge-ui-checks — run the personal headless UI-check harness.
+# Lives outside any repo; pairs with forge-ui-shot (same ~/.local/bin).
+exec node "/Users/andrew/.local/share/forge-ui-checks/run.mjs" "$@"

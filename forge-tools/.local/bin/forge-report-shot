@@ -1,0 +1,26 @@
+#!/usr/bin/env bash
+# forge-report-shot — screenshot a Forge interface report, centered on a phrase.
+# Captures the viewport (readable, in-context) rather than a tight element crop.
+#
+#   forge-report-shot <url> [out.png] ["phrase to center on"]
+#   forge-report-shot --refresh <url> ...     # re-pull cookies after a re-login
+#
+# Then publish the PNG with: forge-ui-shot <out.png> <name> "<caption>"
+set -euo pipefail
+
+SRC="${FORGE_MCP_PROFILE:-$HOME/.cache/forge-mcp-chrome}"
+DST="$HOME/.cache/forge-report-probe/profile"
+
+if [ "${1:-}" = "--refresh" ] || [ ! -d "$DST" ]; then
+  [ "${1:-}" = "--refresh" ] && shift
+  mkdir -p "$DST"
+  rsync -a --delete \
+    --exclude 'Default/Cache' --exclude 'Default/Code Cache' --exclude 'Default/GPUCache' \
+    --exclude 'Default/Service Worker/CacheStorage' --exclude 'GrShaderCache' \
+    --exclude 'ShaderCache' --exclude 'component_crx_cache' --exclude '*.log' \
+    "$SRC/" "$DST/" >/dev/null
+  rm -f "$DST/Singleton"* 2>/dev/null || true
+fi
+
+exec env FORGE_REPORT_PROFILE="$DST" \
+  node "$HOME/.local/share/forge-ui-checks/report-shot.mjs" "$@"

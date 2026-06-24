@@ -10,6 +10,7 @@ init-fish:
 stow:
   stow -t ~ claude
   stow -t ~ fish
+  stow -t ~ forge-tools
   stow -t ~ nvim
   stow -t ~ wezterm
 

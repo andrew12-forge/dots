@@ -1,0 +1,63 @@
+#!/usr/bin/env bash
+# forge-ui-shot — publish a UI-check screenshot to the repo's `ui-shots` orphan
+# branch and print markdown for it: an inline embed (?raw=true, which renders in
+# the PR body for authed repo members) plus a blob-view permalink. The branch is
+# never merged into the default branch, so it stays out of main history and PR
+# diffs.
+#
+# Usage:  forge-ui-shot <png-path> [asset-name] [caption]
+#   <png-path>    local screenshot file to publish
+#   [asset-name]  filename on the branch (default: basename of png-path)
+#   [caption]     optional text appended after the link
+#
+# Requires: gh (authed, `repo` scope), jq. Run from inside the target git repo.
+# Touches only the remote via the GitHub git-data API — never your working tree.
+set -euo pipefail
+
+png="${1:?usage: forge-ui-shot <png-path> [asset-name] [caption]}"
+asset="${2:-$(basename "$png")}"
+caption="${3:-}"
+branch="ui-shots"
+
+[ -f "$png" ] || { echo "error: file not found: $png" >&2; exit 1; }
+
+repo="$(gh repo view --json nameWithOwner -q .nameWithOwner)"
+
+# 1. Upload the image as a git blob.
+b64="$(base64 < "$png" | tr -d '\n')"
+blob_sha="$(jq -n --arg c "$b64" '{content:$c, encoding:"base64"}' \
+  | gh api "repos/$repo/git/blobs" --input - -q .sha)"
+
+# 2. Build a tree + commit. If the branch exists, accumulate onto its tree;
+#    otherwise create a true orphan (no parents, no base tree).
+if ref_json="$(gh api "repos/$repo/git/ref/heads/$branch" 2>/dev/null)"; then
+  parent="$(jq -r .object.sha <<<"$ref_json")"
+  base_tree="$(gh api "repos/$repo/git/commits/$parent" -q .tree.sha)"
+  tree_sha="$(jq -n --arg p "$asset" --arg s "$blob_sha" --arg bt "$base_tree" \
+    '{base_tree:$bt, tree:[{path:$p, mode:"100644", type:"blob", sha:$s}]}' \
+    | gh api "repos/$repo/git/trees" --input - -q .sha)"
+  commit_sha="$(jq -n --arg m "ui-shot: $asset" --arg t "$tree_sha" --arg pp "$parent" \
+    '{message:$m, tree:$t, parents:[$pp]}' \
+    | gh api "repos/$repo/git/commits" --input - -q .sha)"
+  jq -n --arg s "$commit_sha" '{sha:$s, force:true}' \
+    | gh api -X PATCH "repos/$repo/git/refs/heads/$branch" --input - >/dev/null
+else
+  tree_sha="$(jq -n --arg p "$asset" --arg s "$blob_sha" \
+    '{tree:[{path:$p, mode:"100644", type:"blob", sha:$s}]}' \
+    | gh api "repos/$repo/git/trees" --input - -q .sha)"
+  commit_sha="$(jq -n --arg m "ui-shot: $asset" --arg t "$tree_sha" \
+    '{message:$m, tree:$t, parents:[]}' \
+    | gh api "repos/$repo/git/commits" --input - -q .sha)"
+  jq -n --arg r "refs/heads/$branch" --arg s "$commit_sha" '{ref:$r, sha:$s}' \
+    | gh api "repos/$repo/git/refs" --input - >/dev/null
+fi
+
+# Emit both forms: an inline embed (?raw=true renders in the PR body for authed
+# repo members) and a plain blob-view permalink.
+url="https://github.com/${repo}/blob/${branch}/${asset}"
+printf '![%s](%s?raw=true)\n' "$asset" "$url"
+if [ -n "$caption" ]; then
+  printf '\n%s · [permalink](%s)\n' "$caption" "$url"
+else
+  printf '\n[permalink](%s)\n' "$url"
+fi

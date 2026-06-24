@@ -1,0 +1,39 @@
+#!/usr/bin/env bash
+# forge-ui-pr-report — upsert a "UI checks" section into a PR body, idempotently.
+# Designed to run AFTER `no-mistakes` creates the PR: no-mistakes owns the body,
+# this appends/replaces only the marked UI-checks block, leaving the rest intact.
+#
+# Usage:
+#   forge-ui-pr-report [--pr N] [report.md]   # report from file, or stdin
+#   forge-ui-checks | forge-ui-pr-report      # pipe a run's report straight in
+#
+# --pr defaults to the open PR for the current branch. Requires gh.
+set -euo pipefail
+
+pr=""
+file=""
+while [ $# -gt 0 ]; do
+  case "$1" in
+    --pr) pr="${2:?--pr needs a number}"; shift 2 ;;
+    -*)   echo "unknown flag: $1" >&2; exit 2 ;;
+    *)    file="$1"; shift ;;
+  esac
+done
+
+report="$([ -n "$file" ] && cat "$file" || cat)"
+[ -n "${report//[$'\n\t ']/}" ] || { echo "error: empty report" >&2; exit 1; }
+
+[ -n "$pr" ] || pr="$(gh pr view --json number -q .number)"
+
+start="<!-- ui-checks:start -->"
+end="<!-- ui-checks:end -->"
+
+body="$(gh pr view "$pr" --json body -q .body)"
+# Drop any prior UI-checks block (between markers, inclusive).
+clean="$(printf '%s\n' "$body" | awk -v s="$start" -v e="$end" '
+  $0==s {skip=1; next} skip && $0==e {skip=0; next} !skip')"
+
+printf '%s\n\n%s\n%s\n%s\n' "$clean" "$start" "$report" "$end" \
+  | gh pr edit "$pr" --body-file -
+
+echo "forge-ui-pr-report: updated UI-checks section on PR #$pr"

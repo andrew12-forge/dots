@@ -9,3 +9,4 @@
 claude/.claude/*
 !claude/.claude/commands/
 !claude/.claude/settings.json
+!claude/.claude/CLAUDE.md
