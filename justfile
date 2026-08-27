@@ -16,3 +16,9 @@ stow:
 
 init: brew stow init-fish
   @echo "✓ Initialization complete!"
+
+# Install the Chime Dev Tools editor extension (repo: Forge-FDE/chime-dev-tools).
+install-chime-dev-tools:
+  cd ~/_dev/chime-dev-tools && ./build-vsix.py
+  cursor --install-extension ~/_dev/chime-dev-tools/chime-dev-tools-1.1.0.vsix --force
+  @echo "✓ installed; reload the Cursor window (Cmd+Shift+P → Developer: Reload Window)"

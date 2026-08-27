@@ -1,5 +1,6 @@
 **/fish/fish_variables
 **/fish/completions
+**/fish/conf.d/secrets.fish
 
 **/nvim/queries/sand
 *.local.*
@@ -8,5 +9,6 @@
 # (prevents committing session data, logs, and potentially sensitive information)
 claude/.claude/*
 !claude/.claude/commands/
+!claude/.claude/skills/
 !claude/.claude/settings.json
 !claude/.claude/CLAUDE.md

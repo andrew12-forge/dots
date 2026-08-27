@@ -6,12 +6,23 @@ facts (repo structure, repo-local lint false-positives) stay in each project's `
 ## Tools & where they live
 - Personal scripts — `forge-ui-checks`, `forge-ui-shot`, `forge-ui-pr-report`,
   `forge-report-dump`, `forge-report-shot` — are tracked in `~/dots/forge-tools/.local/bin`
-  and stowed onto PATH via `just stow`. Edit the source in `~/dots`, never the `~/.local/bin` symlink.
+  and stowed onto PATH via `just stow`. Edit the source in `~/dots`, never the
+  `~/.local/bin` symlink.
+- `chime-cases` is the EXCEPTION: it lives in its own repo `~/_dev/chime-dev-tools`
+  (github Forge-FDE/chime-dev-tools, private), and the dots entry is a symlink into it —
+  edit `~/_dev/chime-dev-tools/cli/chime-cases`. It fills `run_test_cases_dev` from past
+  Forge runs (non-reg + UT), clears it, builds, and cloud-runs the suite. Driven from
+  Claude by the `chime-test-cases` SKILL (auto-triggers on intent; no slash needed) and
+  from Cursor by the "Chime Dev Tools" extension (`just install-chime-dev-tools`).
 - Go tools (`no-mistakes`, `treehouse`) live in `~/go/bin` via `go install`.
 - `sand` is at `~/Library/Application Support/sand/sand`.
 - treehouse worktrees go in `~/_dev/.treehouse`; interactive shell is fish (config in `~/dots`).
 
 ## Canonical workflow on a sand project
+Not the monorepo (`~/_dev/monorepo`): there its `AGENTS.md` wins — Graphite `gt submit`
+through the `submit-pr` skill, and the Context/Summary/Motivation/Design/Changes body
+instead of the terse house style below.
+
 1. `treehouse` — new worktree off `dev` for the task (isolated).
 2. Open a shell in that worktree and STAY in it for the whole task.
 3. Edit → `sand build` + `sand lint` (focused; leave global `sand format` to the gate — it
@@ -35,3 +46,5 @@ facts (repo structure, repo-local lint false-positives) stay in each project's `
 
 ## General
 - No code comments unless explicitly asked.
+
+@~/.claude/codealmanac.md
