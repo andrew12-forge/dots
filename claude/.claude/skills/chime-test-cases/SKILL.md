@@ -71,28 +71,35 @@ If the user only wants to *stage* the case without running it, stop after
 
 ## Step 2c: Case-signal criteria (non-reg only)
 
-Criteria about what a run CONCLUDED — merchant credit coverage, intake type,
-chargeback eligibility, scenario number — are answered by the case-signal table,
-not by run tags. The CLI routes these automatically; just pass the phrase.
+Criteria about what a run CONCLUDED — merchant credit, intake type, chargeback
+eligibility, scenario, recat target, any of the ~55 columns on the live
+`non_reg_prod_v2` SandSQL table — are answered by the signal path, not run tags.
+The CLI routes these automatically; pass the phrase through.
 
 ```
 chime-cases find "5 cases with partial merchant credit"
 chime-cases find "3 ssd cnp cases with a transcript"
+chime-cases find "3 cases" --signal cb_eligibility_outcome=WAIT_15_DAYS --signal 'dispute_amount>200'
 ```
 
-Flags if you need them: `--merchant-credit partial|partial-lt|partial-gt|full|found|none`,
-`--intake phone|ssd`, `--cb-eligible` / `--no-cb-eligible`, `--scenario N`,
-`--where "<raw sql boolean>"`.
+`--signal` forms: `col=v`, `col!=v`, `col=a,b,c` (IN), `col>10`, `col~text`
+(substring), `col=null`, `col` (set/true), `!col` (unset/false). Repeatable,
+ANDed. Shortcuts: `--merchant-credit`, `--intake phone|ssd`, `--cb-eligible`,
+`--scenario N`. `--where "<raw sql>"` is the escape hatch.
 
-**Always repeat the freshness caveat when a signal filter is used.** Signals come
-from `sand.beta.non_reg_prod`, frozen on 2026-08-16 (its SandSQL successor
-`non_reg_prod_v2` is provisioned but empty), so a signal-filtered search cannot
-return a case newer than that. The CLI prints this; do not let the user assume
-they got recent cases. Un-filtered searches are unaffected and read live runs.
+**Discover before guessing.** `chime-cases signals` lists every column with the
+row count and freshness; `chime-cases signals --column X` shows X's distinct
+values and counts. Use these instead of inventing a column or a value — an
+unknown column is rejected with suggestions, but an unknown *value* silently
+returns nothing.
 
-On non-reg, "phone-filed" / "SSD" are now REAL `intake_type` filters, not the
-transcript proxy. On UT there is no signal table, so those degrade to the
-transcript proxy and everything else is dropped — the CLI says which; relay it.
+The data is LIVE (queried on the shared/prod SandSQL lane, current to the
+minute). Do not repeat the old claim that signals are frozen at 2026-08-16 —
+that was true only of the retired SandDB table.
+
+On non-reg, "phone-filed" / "SSD" are REAL `intake_type` filters. On UT there is
+no signal table, so those degrade to the transcript proxy and other signal
+filters are dropped — the CLI says which; relay it.
 
 ## Step 3: Pass the criteria through
 
