@@ -69,6 +69,31 @@ so restoring before the run finishes would be wrong.
 If the user only wants to *stage* the case without running it, stop after
 `populate` and say so.
 
+## Step 2c: Case-signal criteria (non-reg only)
+
+Criteria about what a run CONCLUDED — merchant credit coverage, intake type,
+chargeback eligibility, scenario number — are answered by the case-signal table,
+not by run tags. The CLI routes these automatically; just pass the phrase.
+
+```
+chime-cases find "5 cases with partial merchant credit"
+chime-cases find "3 ssd cnp cases with a transcript"
+```
+
+Flags if you need them: `--merchant-credit partial|partial-lt|partial-gt|full|found|none`,
+`--intake phone|ssd`, `--cb-eligible` / `--no-cb-eligible`, `--scenario N`,
+`--where "<raw sql boolean>"`.
+
+**Always repeat the freshness caveat when a signal filter is used.** Signals come
+from `sand.beta.non_reg_prod`, frozen on 2026-08-16 (its SandSQL successor
+`non_reg_prod_v2` is provisioned but empty), so a signal-filtered search cannot
+return a case newer than that. The CLI prints this; do not let the user assume
+they got recent cases. Un-filtered searches are unaffected and read live runs.
+
+On non-reg, "phone-filed" / "SSD" are now REAL `intake_type` filters, not the
+transcript proxy. On UT there is no signal table, so those degrade to the
+transcript proxy and everything else is dropped — the CLI says which; relay it.
+
 ## Step 3: Pass the criteria through
 
 Give the user's phrasing to the CLI verbatim as a single quoted argument. It
@@ -83,11 +108,8 @@ Add explicit flags only for things the phrase cannot express, or to override it:
 Notes that matter:
 - Default status filter is `finished`. If the user wants failures, the phrase
   "errored" handles it.
-- Intake wording is a PROXY, not a real filter. Phone-filed vs SSD is decided by
-  `intake_type` (`src/utils.sand:93`), which is extracted during the run and is NOT
-  on the invocation, so the CLI cannot filter on it. "phone-filed" / "SSD" map to
-  transcript presence and the CLI prints a note saying so. Repeat that caveat to the
-  user rather than presenting the result as an intake filter.
+- Intake: real on non-reg (via the signal table's `intake_type`), a transcript
+  proxy on UT. See Step 2c.
 - UT runs carry no `reason_code` tag, so a reason-code criterion cannot work
   there. Say so rather than silently returning unfiltered cases.
 
