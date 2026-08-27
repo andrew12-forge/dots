@@ -37,6 +37,7 @@ If the user names a worktree/bug that is neither default checkout, pass
 | what's in the file | `chime-cases list` |
 | rebuild | `chime-cases build` |
 | run them / run on cloud | `chime-cases run` |
+| what did that run return / how did the cases do | `chime-cases results [run_id]` (add `--wait` if it is still running) |
 
 `populate`, `add`, and `clear` run `sand build --shared` themselves — do not run
 a separate build afterwards. Pass `--no-build` only if the user asks you to skip it.
@@ -153,6 +154,10 @@ app. Use `--no-open` if the user does not want focus stolen.
 It refuses to launch with an empty case list unless given `--force`.
 
 Report the run id and the `forge://<run_id>` deep link.
+
+Once it finishes, `chime-cases results` prints what the suite returned — one row
+per case with `dispute_decision` and a `report_link`. Summarise the decisions
+rather than pasting every link, and never paste transcript content.
 
 ## Troubleshooting
 
