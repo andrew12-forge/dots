@@ -69,11 +69,14 @@ so restoring before the run finishes would be wrong.
 If the user only wants to *stage* the case without running it, stop after
 `populate` and say so.
 
-## Step 2c: Case-signal criteria (non-reg only)
+## Step 2c: Case-signal criteria
 
-Criteria about what a run CONCLUDED — merchant credit, intake type, chargeback
-eligibility, scenario, recat target, any of the ~55 columns on the live
-`non_reg_prod_v2` SandSQL table — are answered by the signal path, not run tags.
+Criteria about what a run CONCLUDED are answered by the signal path, not run
+tags. BOTH projects have one, live and current to the minute:
+
+- non-reg -> `non_reg_prod_v2` (~55 cols, booleans, soft-deleted)
+- UT -> `ut_disputes` (56 cols, "Yes"/"No" TEXT, no soft delete)
+
 The CLI routes these automatically; pass the phrase through.
 
 ```
@@ -97,9 +100,15 @@ The data is LIVE (queried on the shared/prod SandSQL lane, current to the
 minute). Do not repeat the old claim that signals are frozen at 2026-08-16 —
 that was true only of the retired SandDB table.
 
-On non-reg, "phone-filed" / "SSD" are REAL `intake_type` filters. On UT there is
-no signal table, so those degrade to the transcript proxy and other signal
-filters are dropped — the CLI says which; relay it.
+On non-reg, "phone-filed" / "SSD" are REAL `intake_type` filters. UT HAS the
+column but it is NULL on every row, so UT degrades to the transcript proxy —
+the CLI says so; relay it.
+
+The --merchant-credit / --cb-eligible / --scenario shortcuts name non-reg
+columns. On UT use `--signal` over ut_disputes instead, and prefer the value
+form for its text columns: `--signal potential_scam_victim=Yes`, NOT the bare
+`--signal potential_scam_victim` (bare means "set and not false", and "No"
+satisfies that).
 
 ## Step 3: Pass the criteria through
 
