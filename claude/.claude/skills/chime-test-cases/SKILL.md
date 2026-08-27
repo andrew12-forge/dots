@@ -112,10 +112,14 @@ satisfies that).
 
 ## Step 3: Pass the criteria through
 
-Give the user's phrasing to the CLI verbatim as a single quoted argument. It
-parses counts, relative windows, reason codes (full names and the gsc / nrogs /
-mwr / gsnad / pbom / cnp aliases), dispute types, statuses, and transcript
-presence. Do not pre-translate it into flags.
+Give the user's phrasing to the CLI **verbatim** as a single quoted argument.
+Since v2.0.0 a free-text phrase is mapped by Claude against the live table
+schema, so it reaches every column — pre-translating into flags throws that
+away and is strictly worse. Requires ANTHROPIC_API_KEY.
+
+Read the CLI's `note:` lines back to the user. "not expressible as a filter — …"
+means part of their request was NOT applied; never present such a result as if
+the whole request was honoured.
 
 Add explicit flags only for things the phrase cannot express, or to override it:
 `-n`, `--since`, `--until`, `--reason-code`, `--dispute-type`, `--status`,
